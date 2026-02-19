@@ -1,0 +1,38 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "type": "project",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2"
+    },
+    "require-dev": {
+        "phpstan/phpstan": "^2.1",
+        "wikimedia/composer-merge-plugin": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        }
+    },
+    "scripts": {
+
+    },
+    "extra": {
+        "merge-plugin": {
+            "include": ["composer.*.json"],
+            "replace": false,
+            "merge-dev": true,
+            "ignore-missing": true
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "wikimedia/composer-merge-plugin": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

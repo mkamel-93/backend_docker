@@ -1,10 +1,10 @@
 # Backend Docker - PHP Development Environment
 
-A production-ready Docker Compose template for PHP development featuring PHP 8.2-FPM, Nginx 1.20, MySQL 8.0, Redis, phpMyAdmin, and MailHog - fully configured with security headers, performance optimizations, and development tools.
+A production-ready Docker Compose template for PHP development featuring PHP 8.2-FPM, Nginx 1.26, MariaDB 10.6, Redis 5.0, phpMyAdmin, MailHog, and Selenium Chrome - fully configured with security headers, performance optimizations, and development tools.
 
 **Key Features:**
 - Zero-configuration quick start (clone, build, code)
-- 6 integrated services with isolated network architecture
+- 7 integrated services with isolated network architecture
 - Pre-configured development tools (Composer, PHPUnit, PHPStan, PHP CS Fixer, Xdebug)
 - Security hardening (headers, network isolation, file access controls)
 - Performance optimizations (long timeouts, large uploads, Redis caching)
@@ -70,10 +70,12 @@ docker-compose up -d --build
 
 **4. Access Services**
 
-- **Web Application:** http://localhost:8001
-- **phpMyAdmin:** http://localhost:8002
-- **MailHog UI:** http://localhost:8003
-- **MySQL:** localhost:3306 (user: root, password: P@ssw0rd)
+- **Web Application:** http://localhost:8011
+- **phpMyAdmin:** http://localhost:8012
+- **MailHog UI:** http://localhost:8013
+- **Selenium Hub:** http://localhost:4443
+- **Vite Dev Server:** http://localhost:5172
+- **MariaDB:** localhost:3306 (user: root, password: P@ssw0rd)
 - **Redis:** localhost:6379 (password: P@ssw0rd)
 
 ---
@@ -81,11 +83,12 @@ docker-compose up -d --build
 ## Tech Stack
 
 - **PHP 8.2-FPM** - Application runtime with FastCGI Process Manager
-- **Nginx 1.20** - High-performance web server and reverse proxy
-- **MySQL 8.0** - Relational database with persistent storage
-- **Redis** - In-memory cache and session store
+- **Nginx 1.26** - High-performance web server and reverse proxy with Node.js 20.19.0
+- **MariaDB 10.6** - Relational database with persistent storage
+- **Redis 5.0** - In-memory cache and session store
 - **phpMyAdmin** - Web-based database management interface
 - **MailHog** - Email testing tool with SMTP server and web UI
+- **Selenium Chrome** - Browser automation for testing
 - **Docker & Docker Compose** - Container orchestration
 
 ---
@@ -124,19 +127,20 @@ docker-compose up -d --build
 
 | Service | Version | Port(s) | IP Address | Purpose |
 |---------|---------|---------|------------|---------|
-| **PHP-FPM** | 8.2 | Internal (socket) | 100.100.100.11 | PHP application runtime |
-| **Nginx** | 1.20 | 8001 | 100.100.100.12 | Web server & reverse proxy |
-| **MySQL** | 8.0 | 3306 | 100.100.100.13 | Relational database |
-| **phpMyAdmin** | Latest | 8002 | 100.100.100.14 | Database management UI |
-| **MailHog** | Latest | 8003, 1025 | 100.100.100.15 | Email testing (UI & SMTP) |
-| **Redis** | Latest | 6379 | 100.100.100.16 | Cache & session store |
+| **PHP-FPM** | 8.2.30 | Internal (socket) | 172.16.11.11 | PHP application runtime |
+| **Nginx** | 1.26 | 8011, 5172 | 172.16.11.12 | Web server & reverse proxy |
+| **MariaDB** | 10.6 | 3306 | 172.16.11.13 | Relational database |
+| **phpMyAdmin** | Latest | 8012 | 172.16.11.14 | Database management UI |
+| **MailHog** | Latest | 8013, 1025 | 172.16.11.15 | Email testing (UI & SMTP) |
+| **Redis** | 5.0.3 | 6379 | 172.16.11.16 | Cache & session store |
+| **Selenium** | Chrome 144.0 | 4443, 5901 | 172.16.11.17 | Browser automation |
 
 ### PHP-FPM Container
 
 **What it includes:**
-- PHP 8.2 with FastCGI Process Manager
+- PHP 8.2.30 with FastCGI Process Manager
 - **Extensions:** PDO (MySQL, SQLite), MySQLi, mbstring, intl, zip, bcmath, cURL, ctype, LDAP, GD (FreeType, JPEG, PNG), Imagick, Xdebug
-- **Tools:** Composer 2.6, Git, cURL, unzip
+- **Tools:** Composer 2.8.12, Git, cURL, unzip
 - **Configuration:** 1024MB memory limit, 3000s execution time, 1024MB uploads
 
 **Access:**
@@ -147,27 +151,27 @@ make php-bash
 ### Nginx Container
 
 **What it includes:**
-- Nginx 1.20 on Alpine Linux
-- Node.js 16 (for frontend asset building)
+- Nginx 1.26 on Alpine Linux
+- Node.js 20.19.0 (for frontend asset building)
 - Security headers pre-configured
 - 600-second timeouts for long operations
 
 **Access:**
 ```bash
-make nginx-bash
+make web-bash
 ```
 
-### MySQL Container
+### MariaDB Container
 
 **What it includes:**
-- MySQL 8.0 with UTF-8 support
+- MariaDB 10.6 with UTF-8 support
 - Persistent data storage (named volume)
 - Slow query logging enabled
 - General query logging for development
 
 **Access:**
 ```bash
-make mysql-bash
+make database-bash
 # or from host:
 mysql -h localhost -P 3306 -u root -p
 ```
@@ -175,7 +179,7 @@ mysql -h localhost -P 3306 -u root -p
 ### Redis Container
 
 **What it includes:**
-- Latest Redis with Alpine Linux
+- Redis 5.0.3 with Alpine Linux
 - Password protection enabled
 - Persistent data storage (named volume)
 - Ready for sessions and caching
@@ -193,8 +197,8 @@ redis-cli -h redis -p 6379 -a P@ssw0rd
 - No additional configuration needed
 - Connected to MySQL service automatically
 
-**Access:** http://localhost:8002
-- Server: `mysql`
+**Access:** http://localhost:8012
+- Server: `database`
 - Username: `root`
 - Password: `P@ssw0rd` (from .env)
 
@@ -202,16 +206,33 @@ redis-cli -h redis -p 6379 -a P@ssw0rd
 
 **What it provides:**
 - SMTP server on port 1025
-- Web UI on port 8003
+- Web UI on port 8013
 - Catches all outbound emails (development safe)
 - Inspect emails, headers, and raw data
 
-**Access:** http://localhost:8003
+**Access:** http://localhost:8013
 
 **Configure in your application:**
 ```env
 MAIL_HOST=mailhog
 MAIL_PORT=1025
+```
+
+### Selenium Chrome Container
+
+**What it provides:**
+- Chrome browser automation for testing
+- Selenium Hub on port 4443
+- VNC preview on port 5901
+- Ready for Dusk or other browser testing frameworks
+
+**Access:** 
+- **Selenium Hub:** http://localhost:4443
+- **VNC Preview:** vnc://localhost:5901
+
+**Configure in your application:**
+```env
+DUSK_DRIVER_URL="http://selenium:4444/wd/hub"
 ```
 
 ---
@@ -222,45 +243,54 @@ All services run on a custom Docker bridge network with static IP addresses for 
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                    HOST MACHINE (Windows)                     │
-│                                                                │
-│  Port 8001 → Nginx (Web)                                      │
-│  Port 8002 → phpMyAdmin (DB UI)                               │
-│  Port 8003 → MailHog (Email UI)                               │
-│  Port 3306 → MySQL (Direct DB access)                         │
-│  Port 6379 → Redis (Direct cache access)                      │
-│  Port 1025 → MailHog SMTP                                     │
-│                                                                │
-└────────────────────┬───────────────────────────────────────────┘
+│                    HOST MACHINE                              │
+│                                                              │
+│  Port 8011 → Nginx (Web)                                     │
+│  Port 8012 → phpMyAdmin (DB UI)                              │
+│  Port 8013 → MailHog (Email UI)                              │
+│  Port 4443 → Selenium (Hub)                                  │
+│  Port 5901 → Selenium (VNC Preview)                          │
+│  Port 5172 → Vite Dev Server                                 │
+│  Port 3306 → MariaDB (Direct DB access)                      │
+│  Port 6379 → Redis (Direct cache access)                     │
+│  Port 1025 → MailHog SMTP                                    │
+│                                                              │
+└────────────────────┬─────────────────────────────────────────┘
                      │
         ┌────────────┴──────────────────────────────┐
-        │  Docker Bridge Network: backend_docker   │
-        │  Subnet: 100.100.100.0/24                │
+        │  Docker Bridge Network: backend_docker    │
+        │  Subnet: 172.16.11.0/24                   │
         └────────────┬──────────────────────────────┘
                      │
-    ┌────────────────┴─────────────────────────┐
-    │                                          │
-    │  ┌─────────────────────────────────┐    │
-    │  │ Nginx (100.100.100.12:80)       │    │
-    │  │ - Security headers              │    │
-    │  │ - 600s timeouts                 │    │
-    │  └──────────┬──────────────────────┘    │
-    │             │ (Unix Socket)              │
-    │             v                            │
-    │  ┌─────────────────────────────────┐    │
-    │  │ PHP-FPM (100.100.100.11)        │    │
-    │  │ - 1024MB memory                 │    │
-    │  │ - 3000s execution               │    │
-    │  └──────────┬──────────────────────┘    │
-    │             │                            │
-    │  ┌──────────┴──────────┬─────────────┬──┴─────┐
-    │  │                     │             │        │
-    │  v                     v             v        v
-    │  ┌─────────┐  ┌─────────────┐  ┌────────┐  ┌──────────┐
-    │  │ MySQL   │  │ phpMyAdmin  │  │ Redis  │  │ MailHog  │
-    │  │ (.13)   │  │ (.14)       │  │ (.16)  │  │ (.15)    │
-    │  │ 3306    │  │ Port 80     │  │ 6379   │  │ 1025/8025│
-    │  └─────────┘  └─────────────┘  └────────┘  └──────────┘
+    ┌────────────────┴─────────────────────────────────────────┐
+    │                                                          │
+    │  ┌─────────────────────────────────┐                     │
+    │  │ Nginx (172.16.11.12:80)         │                     │
+    │  │ - Security headers              │                     │
+    │  │ - 600s timeouts                 │                     │
+    │  └──────────┬──────────────────────┘                     │
+    │             │ (Unix Socket)                              │
+    │             v                                            │
+    │  ┌─────────────────────────────────┐                     │
+    │  │ PHP-FPM (172.16.11.11)          │                     │
+    │  │ - 1024MB memory                 │                     │
+    │  │ - 3000s execution               │                     │
+    │  └──────────┬──────────────────────┘                     │
+    │             │                                            │
+    │  ┌──────────┴──────────┬─────────────┬────────────┐      │
+    │  │                     │             │            │      │
+    │  v                     v             v            v      │
+    │  ┌─────────┐  ┌─────────────┐  ┌────────┐  ┌──────────┐  │
+    │  │ MariaDB │  │ phpMyAdmin  │  │ Redis  │  │ MailHog  │  │
+    │  │ (.13)   │  │ (.14)       │  │ (.16)  │  │ (.15)    │  │
+    │  │ 3306    │  │ Port 80     │  │ 6379   │  │ 1025/8025│  │
+    │  └─────────┘  └─────────────┘  └────────┘  └──────────┘  │
+    │                                                          │
+    │                                          ┌─────────────┐ │
+    │                                          │ Selenium    │ │
+    │                                          │ (.17)       │ │
+    │                                          │ 4444/5900   │ │
+    │                                          └─────────────┘ │
     │                                                          │
     └──────────────────────────────────────────────────────────┘
 ```
@@ -268,8 +298,8 @@ All services run on a custom Docker bridge network with static IP addresses for 
 ### Network Details
 
 - **Network Name:** `backend_docker`
-- **Subnet:** `100.100.100.0/24`
-- **Gateway:** `100.100.100.1`
+- **Subnet:** `172.16.11.0/24`
+- **Gateway:** `172.16.11.1`
 - **Driver:** Bridge (isolated from other Docker networks)
 
 ### Service Discovery
@@ -278,17 +308,19 @@ Services can communicate using **service names** as hostnames:
 
 ```php
 // From PHP application
-$db_host = 'mysql';        // Resolves to 100.100.100.13
-$redis_host = 'redis';     // Resolves to 100.100.100.16
-$mail_host = 'mailhog';    // Resolves to 100.100.100.15
+$db_host = 'database';      // Resolves to 172.16.11.13
+$redis_host = 'redis';      // Resolves to 172.16.11.16
+$mail_host = 'mailhog';     // Resolves to 172.16.11.15
+$selenium_host = 'selenium'; // Resolves to 172.16.11.17
 ```
 
 ### Communication Patterns
 
 - **Nginx ↔ PHP-FPM:** Unix socket (`/var/run/php-fpm/php-fpm.sock`) - High performance, no network overhead
-- **PHP ↔ MySQL:** TCP on custom network (internal only)
+- **PHP ↔ MariaDB:** TCP on custom network (internal only)
 - **PHP ↔ Redis:** TCP on custom network (internal only)
 - **PHP ↔ MailHog:** SMTP TCP on custom network
+- **PHP ↔ Selenium:** WebDriver TCP on custom network
 - **Host ↔ Services:** Port mappings on Docker bridge
 
 ---
@@ -478,11 +510,11 @@ vendor/bin/phpunit        # Run tests
 vendor/bin/phpstan        # Static analysis
 ```
 
-#### `make nginx-bash`
+#### `make web-bash`
 Access Nginx container shell.
 
 ```bash
-make nginx-bash
+make web-bash
 ```
 
 Once inside:
@@ -491,11 +523,11 @@ nginx -t                  # Test configuration
 cat /etc/nginx/conf.d/domain.conf  # View config
 ```
 
-#### `make mysql-bash`
-Access MySQL interactive shell.
+#### `make database-bash`
+Access MariaDB interactive shell.
 
 ```bash
-make mysql-bash
+make database-bash
 ```
 
 Automatically connects with credentials from `.env`. Run SQL queries directly:
@@ -507,11 +539,11 @@ SHOW TABLES;
 
 ### Database Management
 
-#### `make mysql-import`
+#### `make database-import`
 Import SQL dump file into database.
 
 ```bash
-make mysql-import
+make database-import
 ```
 
 **Prerequisites:**
@@ -605,30 +637,33 @@ APP_NAME=backend_docker          # Used in container naming and database name
 #### Network Configuration
 
 ```env
-DOCKER_NETWORK_SUBNET=100.100.100.0/24          # Custom bridge subnet
-DOCKER_PHP_NETWORK_IP_ADDRESS=100.100.100.11    # PHP-FPM static IP
-DOCKER_NGINX_NETWORK_IP_ADDRESS=100.100.100.12  # Nginx static IP
-DOCKER_MYSQL_NETWORK_IP_ADDRESS=100.100.100.13  # MySQL static IP
+DOCKER_NETWORK_SUBNET=172.16.11.0/24              # Custom bridge subnet
+DOCKER_PHP_NETWORK_IP_ADDRESS=172.16.11.11        # PHP-FPM static IP
+DOCKER_WEB_NETWORK_IP_ADDRESS=172.16.11.12        # Nginx static IP
+DOCKER_DATABASE_NETWORK_IP_ADDRESS=172.16.11.13    # MariaDB static IP
 # ... (other service IPs)
 ```
 
 #### Port Mappings
 
 ```env
-DOCKER_NGINX_NETWORK_PORT=8001          # Web application port
-DOCKER_PHPMYADMIN_NETWORK_PORT=8002     # phpMyAdmin UI port
-DOCKER_MAILHOG_NETWORK_PORT=8003        # MailHog UI port
+DOCKER_WEB_NETWORK_PORT=8011              # Web application port
+DOCKER_WEB_VITE_NETWORK_PORT=5172          # Vite dev server port
+DOCKER_PHPMYADMIN_NETWORK_PORT=8012        # phpMyAdmin UI port
+DOCKER_MAILHOG_NETWORK_PORT=8013           # MailHog UI port
+DOCKER_SELENIUM_HUB_NETWORK_PORT=4443      # Selenium Hub port
+DOCKER_SELENIUM_PREVIEW_NETWORK_PORT=5901  # Selenium VNC port
 ```
 
 #### Database Configuration
 
 ```env
 DB_CONNECTION=mysql
-DB_HOST=mysql                    # Service name (internal DNS)
+DB_HOST=database                # Service name (internal DNS)
 DB_PORT=3306
-DB_DATABASE=backend_docker       # Database name (matches APP_NAME)
+DB_DATABASE=backend_docker     # Database name (matches APP_NAME)
 DB_USERNAME=root
-DB_PASSWORD=P@ssw0rd            # CHANGE THIS for production!
+DB_PASSWORD=P@ssw0rd          # CHANGE THIS for production!
 ```
 
 #### Redis Configuration
@@ -657,16 +692,19 @@ MAIL_PORT=1025                   # MailHog SMTP port
 | `.docker/services/php/php-fpm.d/zzz-www.conf` | PHP-FPM pool configuration |
 | `.docker/services/nginx/Dockerfile` | Nginx image build instructions |
 | `.docker/services/nginx/conf.d/domain.conf` | Nginx virtual host configuration |
-| `.docker/services/mysql/Dockerfile` | MySQL image (uses defaults) |
+| `.docker/services/database/Dockerfile` | MariaDB image (uses defaults) |
 | `.docker/services/redis/Dockerfile` | Redis image with password config |
+| `.docker/services/selenium/Dockerfile` | Selenium Chrome image |
+| `.docker/services/phpmyadmin/Dockerfile` | phpMyAdmin image |
+| `.docker/services/mailhog/Dockerfile` | MailHog image |
 
 ### Common Customizations
 
-#### Change Web Port (from 8001 to 9000)
+#### Change Web Port (from 8011 to 9000)
 
 Edit `.env`:
 ```env
-DOCKER_NGINX_NETWORK_PORT=9000
+DOCKER_WEB_NETWORK_PORT=9000
 ```
 
 Then restart:
@@ -683,7 +721,7 @@ Edit `.env`:
 DB_PASSWORD=MySecurePassword123
 ```
 
-**Important:** Must also update in `docker-compose.yml` under MySQL environment:
+**Important:** Must also update in `docker-compose.yml` under MariaDB environment:
 ```yaml
 MYSQL_PASSWORD: MySecurePassword123
 ```
@@ -828,17 +866,17 @@ make down                    # Stop containers
 **Solution 1 - Find and kill the process:**
 ```bash
 # Windows
-netstat -ano | findstr :8001
+netstat -ano | findstr :8011
 taskkill /PID <PID> /F
 
 # Linux/Mac
-lsof -i :8001
+lsof -i :8011
 kill -9 <PID>
 ```
 
 **Solution 2 - Change port in .env:**
 ```env
-DOCKER_NGINX_NETWORK_PORT=8080
+DOCKER_WEB_NETWORK_PORT=8080
 ```
 Then: `make restart`
 
@@ -870,24 +908,24 @@ make rebuild-container       # Full rebuild
 
 **Diagnosis Steps:**
 
-**1. Verify MySQL is running:**
+**1. Verify MariaDB is running:**
 ```bash
 make ps
-# MySQL should be listed
+# MariaDB should be listed
 ```
 
 **2. Test connection from PHP container:**
 ```bash
 make php-bash
-mysql -h mysql -u root -p
+mysql -h database -u root -p
 # Enter password from .env
 ```
 
 **3. Check network connectivity:**
 ```bash
 make php-bash
-ping mysql
-# Should resolve to 100.100.100.13
+ping database
+# Should resolve to 172.16.11.13
 ```
 
 **4. Verify credentials in .env:**
@@ -905,7 +943,7 @@ make restart                 # Restart all services
 
 ### Nginx 502 Bad Gateway
 
-**Problem:** `502 Bad Gateway` when accessing http://localhost:8001
+**Problem:** `502 Bad Gateway` when accessing http://localhost:8011
 
 **Causes:**
 - PHP-FPM not running
@@ -922,14 +960,14 @@ make log-php                 # Check for PHP errors
 
 **2. Verify socket exists:**
 ```bash
-make nginx-bash
+make web-bash
 ls -la /var/run/php-fpm/
 # Should see php-fpm.sock
 ```
 
 **3. Test Nginx configuration:**
 ```bash
-make nginx-bash
+make web-bash
 nginx -t
 ```
 
@@ -1181,7 +1219,7 @@ This is a template/starting point. To build an application:
 make php-bash
 composer create-project laravel/laravel .
 # Configure database in .env
-# Access: http://localhost:8001
+# Access: http://localhost:8011
 ```
 
 **Option 2: Add Symfony Framework**
@@ -1189,7 +1227,7 @@ composer create-project laravel/laravel .
 make php-bash
 composer create-project symfony/skeleton .
 # Configure database
-# Access: http://localhost:8001
+# Access: http://localhost:8011
 ```
 
 **Option 3: Custom PHP Application**

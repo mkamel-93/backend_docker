@@ -1,4 +1,4 @@
-FROM phpmyadmin/phpmyadmin
+FROM phpmyadmin:5-apache
 
 ENV TZ=UTC \
     UPLOAD_LIMIT=2G \
