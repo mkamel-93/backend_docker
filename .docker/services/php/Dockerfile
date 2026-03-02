@@ -25,6 +25,10 @@ RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
     install -d -m 0755 -o www-data -g www-data /home/www-data \
 ;fi
 
+RUN echo 'alias art="php artisan"' >> /root/.bashrc && \
+    echo 'alias art="php artisan"' >> /home/www-data/.bashrc && \
+    chown www-data:www-data /home/www-data/.bashrc && \
+    chown root:root /root/.bashrc
 
 # Build Tools (Needed for PECL/Compiling)
 RUN apk add --no-cache \
@@ -58,6 +62,7 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg && \
     gd \
     intl \
     mysqli \
+    pcntl \
     pdo_mysql \
     pdo_sqlite \
     zip
@@ -69,7 +74,14 @@ RUN printf "\n" | pecl install imagick xdebug \
 ENV COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_HOME=/composer
 COPY --from=composer:2.8.12 /usr/bin/composer /usr/bin/composer
 
-RUN mkdir -p /composer/cache && chown -R www-data:www-data /composer
+RUN mkdir -p /composer/cache/files && \
+    chown -R www-data:www-data /composer && \
+    chmod -R 775 /composer
+
+# Install Laravel installer globally
+RUN composer global require laravel/installer:v5.12.* && \
+    echo 'export PATH="$PATH:/composer/vendor/bin"' >> /root/.bashrc && \
+    echo 'export PATH="$PATH:/composer/vendor/bin"' >> /home/www-data/.bashrc
 
 ARG DOCKER_SERVICES_PATH
 COPY ${DOCKER_SERVICES_PATH}/php/php-fpm.d/zzz-www.conf /usr/local/etc/php-fpm.d/zzz-www.conf
@@ -80,3 +92,6 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 WORKDIR /var/www
 ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["php-fpm"]
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+  CMD php-fpm -t || exit 1

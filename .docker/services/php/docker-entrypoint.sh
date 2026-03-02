@@ -1,34 +1,56 @@
 #!/bin/bash
 set -e
 
-# . Handle the PHP-FPM socket directory (from your zzz-www.conf)
-mkdir -p /var/run/php-fpm
-chown -R www-data:www-data /var/run/php-fpm
-chmod -R 755 /var/run/php-fpm
+echo "--- Preparing environment ---"
 
-# . Create and fix Laravel storage/framework subdirectories
-# These are essential for Laravel to boot correctly
-mkdir -p /var/www/bootstrap/cache \
+# --- 1. Directory Preparation ---
+mkdir -p /var/run/php-fpm \
+         /composer/cache/files \
+         /var/www/bootstrap/cache \
+         /var/www/public \
          /var/www/storage \
-         /var/www/tests/Browser/{console,screenshots}
+         /var/www/storage/framework/{sessions,views,cache} \
+         /var/www/storage/logs
 
-# . Fix Ownership for the entire storage and bootstrap folders
-# Because we synced IDs in the Dockerfile, www-data = You
-chown -R www-data:www-data /var/www/storage /var/www/bootstrap/cache /var/www/tests/Browser
-chmod -R 775 /var/www/storage /var/www/bootstrap/cache /var/www/tests/Browser
+# --- 2. Targeted Permissions Management ---
+chown -R www-data:www-data /composer \
+                           /var/run/php-fpm \
+                           /var/www/public \
+                           /var/www/storage \
+                           /var/www/bootstrap \
+                           /var/www/bootstrap/cache \
+                           /var/www/vendor 2>/dev/null || true
 
-if [ ! -d "/var/www/vendor" ]; then
-    su-exec www-data composer install --no-interaction --no-ansi --no-scripts
+chmod -R 775 /composer \
+             /var/www/storage \
+             /var/www/bootstrap/cache
+
+chmod 775 /var/run/php-fpm
+
+if [ -d "/var/www/bootstrap/cache" ]; then
+    find /var/www/bootstrap/cache -type f ! -name '.gitignore' -delete
 fi
 
-# . Fix Ownership for vendor if it exists (safety net)
-chown -R www-data:www-data /var/www/vendor
-chmod -R 755 /var/www/vendor
+# --- 4. Composer Build Pipeline ---
+if [ -f "composer.json" ]; then
+    # Run install only if vendor is missing
+    if [ ! -d "/var/www/vendor" ]; then
+        echo "Vendor directory not found. Installing dependencies..."
+        su-exec www-data composer install
+    fi
 
-# We do this as www-data to ensure the link is owned correctly
-su-exec www-data php /var/www/artisan storage:link --force
+    # Safety check: Ensure vendor ownership is correct
+    chown -R www-data:www-data /var/www/vendor
+    chmod -R 755 /var/www/vendor
 
-su-exec www-data php /var/www/artisan optimize:clear
+    # Run artisan commands
+    su-exec www-data php /var/www/artisan storage:link --force
+    su-exec www-data php /var/www/artisan optimize:clear
+    su-exec www-data php /var/www/artisan key:generate
+    su-exec www-data php /var/www/artisan migrate --seed
+else
+    echo "Notice: composer.json not found in /var/www. Skipping Composer tasks."
+fi
 
-# Execute the CMD (php-fpm)
+# Execute the CMD
 exec "$@"
