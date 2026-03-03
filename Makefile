@@ -1,25 +1,30 @@
 # Define the path to your docker-compose file
-COMPOSE_FILE = .docker/docker-compose.yml
-DOCKER_ENV   = .docker/.env.docker
-ROOT_LINK    = docker-compose.yml
-ROOT_ENV     = .env
+COMPOSE_FILE      = .docker/docker-compose.yml
+DOCKER_ENV        = .docker/.env.docker
+ROOT_ENV          = .env
 
-COMPOSE_CMD = /usr/bin/docker compose -f $(COMPOSE_FILE) --env-file $(ROOT_ENV) --project-directory . --project-name $(DOCKER_APP_NAME)
+# Use a double dollar sign to force the shell to evaluate the variable
+COMPOSE_CMD = docker compose \
+	-f $(COMPOSE_FILE) \
+	--env-file $(ROOT_ENV) \
+ 	--project-directory . \
+	--project-name $$(val=$$(grep -m1 '^DOCKER_APP_NAME=' $(ROOT_ENV) | cut -d'=' -f2-); echo $${val:-mostafa-project})
 
-.PHONY: link-compose init-env sync-env destroy build rebuild-container build-project \
+.PHONY: symlink init-env sync-env pma-setup destroy build rebuild-container build-project \
         up down restart conf ps php-bash web-bash database-bash database-import \
         logs logs-watch log-php test test-pint test-phpstan \
-        test-phpunit-coverage reset-ide-helper reset-data fix-pint-and-blade
+        test-phpunit-coverage reset-ide-helper reset-data fix-pint-and-blade \
+        test-dusk-all test-dusk-staff
 
 # Load environment variables from .env if it exists
 -include .env
 export
 
-# make symlink to docker-compose into the root project .
-link-compose:
-	@if [ ! -L $(ROOT_LINK) ]; then \
+# make symlink to docker-compose into the root project
+symlink:
+	@if [ ! -L docker-compose.yml ]; then \
 		echo "Creating symbolic link for docker-compose.yml..."; \
-		ln -s $(COMPOSE_FILE) $(ROOT_LINK); \
+		ln -s $(COMPOSE_FILE) docker-compose.yml; \
 	fi
 
 # create .env if not exists
@@ -38,10 +43,16 @@ init-env:
 # SYNC: This runs whenever .env.docker changes
 sync-env: init-env
 	@echo "Updating Docker section in root .env..."
-	@# Delete old data between markers in root .env
-	@sed -i '/# Start Docker Configuration/,/# End Docker Configuration/{//!d}' $(ROOT_ENV)
+	@# Delete old data between markers in root .env using temporary file
+	@sed '/# Start Docker Configuration/,/# End Docker Configuration/{//!d}' $(ROOT_ENV) > $(ROOT_ENV).tmp
 	@# Read and insert variables from .env.docker
-	@sed -i '/# Start Docker Configuration/r $(DOCKER_ENV)' $(ROOT_ENV)
+	@sed '/# Start Docker Configuration/r $(DOCKER_ENV)' $(ROOT_ENV).tmp > $(ROOT_ENV)
+	@rm -f $(ROOT_ENV).tmp
+
+pma-setup: sync-env
+	@echo "Configuring phpMyAdmin Storage..."
+	@$(COMPOSE_CMD) exec -T phpmyadmin cat /var/www/html/sql/create_tables.sql | \
+	$(COMPOSE_CMD) exec -T database sh -c 'mysql -u"root" -p"$$MYSQL_ROOT_PASSWORD"'
 
 destroy: sync-env
 	$(COMPOSE_CMD) down --rmi all --volumes --remove-orphans
@@ -79,7 +90,7 @@ web-bash: sync-env
 database-bash: sync-env
 	$(COMPOSE_CMD) exec database bash -c 'mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD'
 database-import: sync-env
-	$(COMPOSE_CMD) exec -T database bash -c 'mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE' < dump.sql
+	$(COMPOSE_CMD) exec -T database bash -c 'mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD -e "DROP DATABASE IF EXISTS $$MYSQL_DATABASE; CREATE DATABASE $$MYSQL_DATABASE;" && mysql -u$$MYSQL_USER -p$$MYSQL_PASSWORD $$MYSQL_DATABASE' < storage/.dump/db/init.sql
 
 logs: sync-env
 	$(COMPOSE_CMD) logs
@@ -110,5 +121,8 @@ test-phpstan: sync-env
 test-phpunit-coverage: sync-env
 	$(COMPOSE_CMD) exec -T --user www-data php sh -c 'COMPOSER=composer.script.json composer run-script test:phpunit-coverage'
 
-test-phpunit-coverage-project: sync-env
-	$(COMPOSE_CMD) exec -T --user www-data php sh -c 'COMPOSER=composer.script.json composer run-script test:phpunit-coverage-project'
+test-dusk-all: sync-env
+	$(COMPOSE_CMD) exec -T --user www-data php sh -c 'COMPOSER=composer.script.json composer run-script test:dusk:all'
+
+test-dusk-staff: sync-env
+	$(COMPOSE_CMD) exec -T --user www-data php sh -c 'COMPOSER=composer.script.json composer run-script test:dusk:staff'

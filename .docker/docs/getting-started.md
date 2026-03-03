@@ -117,7 +117,7 @@ make database-import
 ### Understanding Environment Files
 
 1. **`.docker/.env.docker`** - Docker-specific configuration
-   - Network IP addresses (172.19.10.0/24)
+   - Network IP addresses (172.21.0.0/24)
    - Docker paths
 
 2. **`.env`** - Root environment file

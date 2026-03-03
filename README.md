@@ -29,7 +29,7 @@ make rebuild-container
 
 This command:
 - Builds all 7 services (PHP, Nginx, MySQL, phpMyAdmin, Redis, MailHog, Selenium)
-- Sets up a static IP network (172.19.10.0/24)
+- Sets up a static IP network (172.21.0.0/24)
 - Maps your user permissions to containers
 - Installs dependencies if present
 

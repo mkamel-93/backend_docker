@@ -9,7 +9,7 @@ The environment uses a custom bridge network with **fixed IP addresses** for rel
 ### Network Details
 - **Name**: `backend_docker` ( configurable via `DOCKER_APP_NAME`)
 - **Type**: Bridge network
-- **Subnet**: `172.19.10.0/24`
+- **Subnet**: `172.21.0.0/24`
 - **Driver**: Bridge
 - **IP Assignment**: Static (fixed) for all services
 
@@ -40,16 +40,16 @@ The environment uses a custom bridge network with **fixed IP addresses** for rel
 DOCKER_APP_NAME=backend_docker
 
 # Network Configuration
-DOCKER_NETWORK_SUBNET=172.19.10.0/24
+DOCKER_NETWORK_SUBNET=172.21.0.0/24
 
 # Service IP Addresses
-DOCKER_PHP_NETWORK_IP_ADDRESS=172.19.10.11
-DOCKER_WEB_NETWORK_IP_ADDRESS=172.19.10.12
-DOCKER_DATABASE_NETWORK_IP_ADDRESS=172.19.10.13
-DOCKER_PHPMYADMIN_NETWORK_IP_ADDRESS=172.19.10.14
-DOCKER_MAILHOG_NETWORK_IP_ADDRESS=172.19.10.15
-DOCKER_REDIS_NETWORK_IP_ADDRESS=172.19.10.16
-DOCKER_SELENIUM_NETWORK_IP_ADDRESS=172.19.10.17
+DOCKER_PHP_NETWORK_IP_ADDRESS=172.21.0.11
+DOCKER_WEB_NETWORK_IP_ADDRESS=172.21.0.12
+DOCKER_DATABASE_NETWORK_IP_ADDRESS=172.21.0.13
+DOCKER_PHPMYADMIN_NETWORK_IP_ADDRESS=172.21.0.14
+DOCKER_MAILHOG_NETWORK_IP_ADDRESS=172.21.0.15
+DOCKER_REDIS_NETWORK_IP_ADDRESS=172.21.0.16
+DOCKER_SELENIUM_NETWORK_IP_ADDRESS=172.21.0.17
 ```
 
 ### Docker Compose Network Definition
@@ -71,13 +71,13 @@ Services communicate using fixed internal IP addresses:
 
 ```yaml
 # PHP connecting to database
-DB_HOST: 172.19.10.13
+DB_HOST: 172.21.0.13
 
 # PHP connecting to Redis
-REDIS_HOST: 172.19.10.16
+REDIS_HOST: 172.21.0.16
 
 # PHP connecting to Selenium
-DUSK_DRIVER_URL: http://172.19.10.17:4444/wd/hub
+DUSK_DRIVER_URL: http://172.21.0.17:4444/wd/hub
 ```
 
 ### External Access (Auto-assigned Ports)

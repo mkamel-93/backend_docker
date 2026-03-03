@@ -32,11 +32,11 @@ if [ -d "/var/www/bootstrap/cache" ]; then
 fi
 
 # --- 4. Composer Build Pipeline ---
-if [ -f "composer.json" ]; then
+if [ -f "/var/www/composer.json" ]; then
     # Run install only if vendor is missing
-    if [ ! -d "/var/www/vendor" ]; then
+    if [ ! -d "/var/www/vendor/autoload.php" ]; then
         echo "Vendor directory not found. Installing dependencies..."
-        su-exec www-data composer install
+        su-exec www-data composer install --no-interaction
     fi
 
     # Safety check: Ensure vendor ownership is correct
@@ -45,9 +45,11 @@ if [ -f "composer.json" ]; then
 
     # Run artisan commands
     su-exec www-data php /var/www/artisan storage:link --force
+    if ! grep -qE '^APP_KEY=base64:' /var/www/.env 2>/dev/null && [ -z "$APP_KEY" ]; then
+        su-exec www-data php /var/www/artisan key:generate --force
+    fi
     su-exec www-data php /var/www/artisan optimize:clear
-    su-exec www-data php /var/www/artisan key:generate
-    su-exec www-data php /var/www/artisan migrate --seed
+    su-exec www-data php /var/www/artisan migrate --force
 else
     echo "Notice: composer.json not found in /var/www. Skipping Composer tasks."
 fi

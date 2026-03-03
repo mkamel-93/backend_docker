@@ -49,14 +49,14 @@ services:
       DEBUG: 1
       PHP_IDE_CONFIG: serverName=${DOCKER_APP_NAME}_XdebugServer
       DUSK_HEADLESS_DISABLED: "true"
-      APP_URL: "http://${DOCKER_WEB_NETWORK_IP_ADDRESS}"
-      DUSK_DRIVER_URL: "http://${DOCKER_SELENIUM_NETWORK_IP_ADDRESS}:4444/wd/hub"
+      APP_URL: "http://${DOCKER_WEB_IP}"
+      DUSK_DRIVER_URL: "http://${DOCKER_SELENIUM_IP}:4444/wd/hub"
     depends_on:
       - database
       - redis
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_PHP_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_PHP_IP}
 
   web:
     image: ${DOCKER_APP_NAME}_web:latest
@@ -80,7 +80,7 @@ services:
       - php
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_WEB_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_WEB_IP}
 
   database:
     image: ${DOCKER_APP_NAME}_database:latest
@@ -107,7 +107,7 @@ services:
       - "3306"
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_DATABASE_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_DB_IP}
 
   phpmyadmin:
     image: ${DOCKER_APP_NAME}_phpmyadmin:latest
@@ -130,7 +130,7 @@ services:
       - "80"
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_PHPMYADMIN_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_PMA_IP}
 
   mailhog:
     image: ${DOCKER_APP_NAME}_mailhog:latest
@@ -145,7 +145,7 @@ services:
       - "8025"
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_MAILHOG_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_MAIL_IP}
 
   redis:
     image: ${DOCKER_APP_NAME}_redis:latest
@@ -169,7 +169,7 @@ services:
       - "6379"
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_REDIS_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_REDIS_IP}
 
   selenium:
     image: ${DOCKER_APP_NAME}_selenium:latest
@@ -179,14 +179,13 @@ services:
       dockerfile: ${DOCKER_SERVICES_PATH}/selenium/Dockerfile
     restart: unless-stopped
     ports:
-      - "4444" # for Selenium WebDriver
-      - "5900" #  for Real VNC viewer
+      - "4444"
     volumes:
       - /dev/shm:/dev/shm
     shm_size: '2gb'
     networks:
       app_subnet:
-        ipv4_address: ${DOCKER_SELENIUM_NETWORK_IP_ADDRESS}
+        ipv4_address: ${DOCKER_SELENIUM_IP}
 
 # ----------------------------------------------------------------------------------
 # Network Configuration

@@ -4,13 +4,13 @@
 
 | Service | IP Address          | Purpose |
 |---------|---------------------|---------|
-| PHP | `172.19.10.11`      | Application server |
-| Web (Nginx) | `172.19.10.12`      | Web server |
-| Database (MySQL) | `172.19.10.13`      | Database server |
-| phpMyAdmin | `172.19.10.14`      | Database admin |
-| MailHog | `172.19.10.15`      | Email testing |
-| Redis | `172.19.10.16`      | Cache/Session store |
-| Selenium | `172.19.10.17:4444` | Browser automation |
+| PHP | `172.21.0.11`      | Application server |
+| Web (Nginx) | `172.21.0.12`      | Web server |
+| Database (MySQL) | `172.21.0.13`      | Database server |
+| phpMyAdmin | `172.21.0.14`      | Database admin |
+| MailHog | `172.21.0.15`      | Email testing |
+| Redis | `172.21.0.16`      | Cache/Session store |
+| Selenium | `172.21.0.17:4444` | Browser automation |
 
 ## 🐘 PHP Service
 - **Image**: `php:8.2.30-fpm-alpine`

@@ -13,7 +13,5 @@ RUN echo "upload_max_filesize=${UPLOAD_LIMIT}" > /usr/local/etc/php/conf.d/uploa
     echo "max_execution_time=${MAX_EXECUTION_TIME}" > /usr/local/etc/php/conf.d/execution.ini && \
     echo "max_input_vars=${MAX_INPUT_VARS}" > /usr/local/etc/php/conf.d/input_vars.ini
 
-USER www-data
-
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
