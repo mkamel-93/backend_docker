@@ -8,7 +8,7 @@ mkdir -p /var/run/php-fpm \
          /composer/cache/files \
          /var/www/bootstrap/cache \
          /var/www/public \
-         /var/www/storage \
+         /var/www/storage/.dump \
          /var/www/storage/framework/{sessions,views,cache} \
          /var/www/storage/logs
 
@@ -17,6 +17,7 @@ chown -R www-data:www-data /composer \
                            /var/run/php-fpm \
                            /var/www/public \
                            /var/www/storage \
+                           /var/www/storage/.dump \
                            /var/www/bootstrap \
                            /var/www/bootstrap/cache \
                            /var/www/vendor 2>/dev/null || true
@@ -34,7 +35,7 @@ fi
 # --- 4. Composer Build Pipeline ---
 if [ -f "/var/www/composer.json" ]; then
     # Run install only if vendor is missing
-    if [ ! -d "/var/www/vendor/autoload.php" ]; then
+    if [ ! -d "/var/www/vendor" ] || [ ! -f "/var/www/vendor/autoload.php" ]; then
         echo "Vendor directory not found. Installing dependencies..."
         su-exec www-data composer install --no-interaction
     fi
@@ -44,7 +45,6 @@ if [ -f "/var/www/composer.json" ]; then
     chmod -R 755 /var/www/vendor
 
     # Run artisan commands
-    su-exec www-data php /var/www/artisan storage:link --force
     if ! grep -qE '^APP_KEY=base64:' /var/www/.env 2>/dev/null && [ -z "$APP_KEY" ]; then
         su-exec www-data php /var/www/artisan key:generate --force
     fi

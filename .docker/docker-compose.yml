@@ -22,6 +22,21 @@ volumes:
   db_volume:
   redis_volume:
 
+# ----------------------------------------------------------------------------------
+# Network Configuration
+# ----------------------------------------------------------------------------------
+networks:
+  app_subnet:
+    name: ${DOCKER_APP_NAME}
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: ${DOCKER_NETWORK_SUBNET}
+
+# ----------------------------------------------------------------------------------
+# Services
+# ----------------------------------------------------------------------------------
 services:
   php:
     image: ${DOCKER_APP_NAME}_php:latest
@@ -75,7 +90,6 @@ services:
       - <<: *common-dir-work
     ports:
       - "80"
-      - "5173"
     depends_on:
       - php
     networks:
@@ -186,15 +200,3 @@ services:
     networks:
       app_subnet:
         ipv4_address: ${DOCKER_SELENIUM_IP}
-
-# ----------------------------------------------------------------------------------
-# Network Configuration
-# ----------------------------------------------------------------------------------
-networks:
-  app_subnet:
-    name: ${DOCKER_APP_NAME}
-    driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: ${DOCKER_NETWORK_SUBNET}

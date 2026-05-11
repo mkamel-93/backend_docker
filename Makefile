@@ -29,15 +29,17 @@ symlink:
 
 # create .env if not exists
 init-env:
-	@if [ ! -f .env.example ]; then \
-		echo "Creating .env.example with Docker markers..."; \
-		echo "# Start Docker Configuration" > .env.example; \
-		echo "" >> .env.example; \
-		echo "# End Docker Configuration" >> .env.example; \
-	fi
 	@if [ ! -f $(ROOT_ENV) ]; then \
+		if [ ! -f .env.example ]; then \
+			echo "Creating .env.example with Docker markers..."; \
+			echo "# Start Docker Configuration" > .env.example; \
+			echo "" >> .env.example; \
+			echo "# End Docker Configuration" >> .env.example; \
+		fi; \
 		echo "Creating $(ROOT_ENV) from .env.example..."; \
 		cp .env.example $(ROOT_ENV); \
+	else \
+		echo "$(ROOT_ENV) already exists. Skipping."; \
 	fi
 
 # SYNC: This runs whenever .env.docker changes

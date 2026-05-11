@@ -1,25 +1,26 @@
 #!/bin/bash
 set -e
 
-# --- 1. Directory Preparation ---
 mkdir -p /home/nginx/.npm \
-         /var/www/public/build \
-         /var/www/storage/logs
+         /var/www/.docker/logs
 
-# --- 2. Targeted Permissions Management ---
+# --- Log File Initialization ---
+touch /var/www/.docker/logs/nginx-error.log
+chown nginx:nginx /var/www/.docker/logs/nginx-error.log
+chmod 664 /var/www/.docker/logs/nginx-error.log
+
+# --- Directory Preparation ---
+mkdir -p /home/nginx/.npm
+
+# --- Targeted Permissions Management ---
 chown -R nginx:nginx /home/nginx/.npm \
-                     /var/www/public/build \
+                     /var/www/public/build 2>/dev/null || true \
                      /var/www/node_modules 2>/dev/null || true
 
 chmod -R 775 /home/nginx/.npm \
-             /var/www/public/build
+             /var/www/public/build  2>/dev/null || true
 
-# --- 3. Log File Initialization ---
-touch /var/www/.docker/logs/nginx-backend-error.log
-chown nginx:nginx /var/www/.docker/logs/nginx-backend-error.log
-chmod 664 /var/www/.docker/logs/nginx-backend-error.log
-
-# --- 4. Node.js Build Pipeline ---
+# --- Node.js Build Pipeline ---
 if [ -f "package.json" ]; then
     # This will not crash even if the file is already gone
     rm -f /var/www/public/hot
@@ -38,6 +39,6 @@ else
     echo "Notice: package.json not found in /var/www. Skipping Node tasks."
 fi
 
-# --- 5. Start Container Process ---
+# --- Start Container Process ---
 # Pass execution to the CMD defined in the Dockerfile (e.g., nginx)
 exec "$@"

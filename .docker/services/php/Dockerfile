@@ -1,4 +1,4 @@
-FROM php:8.2.30-fpm-alpine
+FROM php:8.3-fpm-alpine
 
 ENV TZ=UTC
 
@@ -27,6 +27,8 @@ RUN if [ ${USER_ID:-0} -ne 0 ] && [ ${GROUP_ID:-0} -ne 0 ]; then \
 
 RUN echo 'alias art="php artisan"' >> /root/.bashrc && \
     echo 'alias art="php artisan"' >> /home/www-data/.bashrc && \
+    echo 'alias optimize="clear && > storage/logs/laravel.log && php artisan optimize:"' >> /root/.bashrc && \
+    echo 'alias optimize="clear && > storage/logs/laravel.log && php artisan optimize:"' >> /home/www-data/.bashrc && \
     chown www-data:www-data /home/www-data/.bashrc && \
     chown root:root /root/.bashrc
 
@@ -46,6 +48,7 @@ RUN apk add --no-cache \
 # Database & Core PHP Dependencies
 RUN apk add --no-cache \
     curl-dev \
+    hiredis-dev \
     icu-dev \
     libxml2-dev \
     libzip-dev \
@@ -71,6 +74,11 @@ RUN printf "\n" | pecl install imagick xdebug \
     && docker-php-ext-enable imagick xdebug \
     && rm -rf /tmp/pear
 
+# phpredis (with hiredis for async performance)
+RUN pecl install redis --enable-redis-igbinary --enable-redis-hiredis \
+    && docker-php-ext-enable redis \
+    && rm -rf /tmp/pear
+
 ENV COMPOSER_ALLOW_SUPERUSER=1 COMPOSER_HOME=/composer
 COPY --from=composer:2.8.12 /usr/bin/composer /usr/bin/composer
 
@@ -79,7 +87,7 @@ RUN mkdir -p /composer/cache/files && \
     chmod -R 775 /composer
 
 # Install Laravel installer globally
-RUN composer global require laravel/installer:v5.12.* && \
+RUN composer global require laravel/installer && \
     echo 'export PATH="$PATH:/composer/vendor/bin"' >> /root/.bashrc && \
     echo 'export PATH="$PATH:/composer/vendor/bin"' >> /home/www-data/.bashrc
 
